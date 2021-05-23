@@ -1,0 +1,24 @@
+---
+- name: GATHER INFORMATION FROM ROUTERS
+  hosts: cisco
+  connection: network_cli
+  gather_facts: no
+
+  tasks:
+    - name: GATHER ROUTER FACTS
+      ios_facts:
+
+    - name: DISPLAY VERSION
+      debug:
+        msg: "The IOS version is: {{ ansible_net_version }}"
+
+    - name: DISPLAY SERIAL NUMBER
+      debug:
+        msg: "The serial number is:{{ ansible_net_serialnum }}"
+    
+    - name: CONFIGURE SNMP
+      ios_config:
+        commands:
+          - snmp-server community public RO
+          - snmp-server community private RW
+

@@ -1,0 +1,48 @@
+image:
+  name: williamyeh/ansible:ubuntu18.04
+
+stages:
+  - deploy
+  - demo
+  - destroy
+
+cache:
+  key: demo
+  untracked: true
+  policy: pull-push
+
+aws_setup:
+  stage: deploy
+  script:
+    - ansible --version
+    - pip install boto boto3 netaddr passlib
+    - cd provisioner
+    - ansible-playbook provision_lab.yml -e "ec2_region=us-west-2 ec2_name_prefix=ansible-demo student_total=1 networking=true" || true
+  artifacts:
+    untracked: true
+    when: always
+  allow_failure: true
+  when: manual
+
+run script:
+  stage: demo
+  dependencies:
+    - aws_setup
+  variables:
+    ANSIBLE_HOST_KEY_CHECKING: "False"
+  script:
+    - ansible --version
+    - pip install boto boto3 netaddr passlib
+    - cd ci-cd-demo
+    - ansible-playbook -i /builds/bdowney/ansible-demo/provisioner/ansible-demo/student1-instances.txt -e "ansible_ssh_private_key_file=/builds/bdowney/ansible-demo/provisioner/ansible-demo/ansible-demo-private.pem" ci.yml
+  allow_failure: true
+  when: manual
+
+aws_destroy:
+  stage: destroy
+  script:
+    - ansible --version
+    - pip install boto boto3 netaddr passlib
+    - cd provisioner
+    - ansible-playbook teardown_lab.yml -e "ec2_region=us-west-2 ec2_name_prefix=ansible-demo student_total=1 networking=true"
+  when: manual 
